@@ -1,6 +1,7 @@
 (ns harbor.core
   (:gen-class)
-  (:require [harbor.secureRandom :as sec-rand]))
+  (:require [harbor.secureRandom :as sec-rand]
+            [me.raynes.fs :as fs]))
 
 (defn read-datab [location]
   (slurp location))
@@ -103,9 +104,15 @@
 (defn display-to-console [word-list]
   (println (clojure.string/join " " word-list)))
 
+(defn default-database-location []
+  (str (System/getProperty "user.home") "/bin/harbor/wordDatabase.txt"))
+
+(defn fetch-database []
+  (fs/exists? (default-database-location)))
 
 (defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (->> (construct-password 4 5 6 "resources/wordDatabase.txt")
-       (display-to-console)))
+  "returns a password of length num-words."
+  [num-words]
+  (when (fetch-database)
+    (->> (construct-password (read-string num-words) 5 6 (default-database-location))
+         (display-to-console))))
