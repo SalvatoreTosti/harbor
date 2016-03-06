@@ -4,58 +4,65 @@
             [me.raynes.fs :as fs]))
 
 (defn read-datab [location]
+  {:pre [(fs/exists? location)]}
   (slurp location))
 
 (defn map-from-datab [location]
+  {:pre [(fs/exists? location)]}
   (->> (read-datab location)
        (clojure.string/split-lines)
-       ;(map clojure.string/triml)
        (map #(clojure.string/split % #"\t"))
        (into {})))
 
-#_(defn generate-number [hi]
-  "Returns a string representation of a number.
-  Selects numbers between 1 and hi, inclusive.
-  NOTE: Is not crypto secure generation of numbers,
-  use secureRandom.clj 'secure-generate-random' instead"
-  (->> (rand-int hi)
-       (+ 1)
-       (str)))
-
-(defn generate-number-seq [length hi]
+(defn generate-number-string
   "Creates a string of random numbers from 1 to hi, of length 'length'"
+  [length hi]
+  {:pre [(number? length)
+         (pos? length)
+         (number? hi)
+         (pos? hi)
+         (< hi 10)]}
   (clojure.string/join(take length (repeatedly #(sec-rand/secure-generate-number hi)))))
 
-(defn get-single-word [map-datab key-string]
+(defn get-single-word
   "Returns corresponding value associated with 'key-string' from map-datab"
+  [map-datab key-string]
+  {:pre [(not-empty map-datab)
+         (not-empty key-string)]}
+
   (map-datab key-string))
 
-(defn construct-password [pass-length key-length key-hi location]
+(defn construct-password
   "Constructs a random password consisting of 'pass-length' number of words from the map associated with data found at 'location'.
   Note, 'key-length' and 'key-hi' refer to how many numbers / maximum numbers are associated with the keys found in the data at 'location'."
+  [pass-length key-length key-hi location]
+  {:pre [(number? pass-length)
+         (pos? pass-length)
+         (number? key-length)
+         (pos? key-length)
+         (= key-length 5) ;current implementation requires that key length be 5
+         (number? key-hi)
+         (pos? key-hi)
+         (< key-hi 10)
+         (fs/exists? location)]}
+
   (let [datab (map-from-datab location)]
-  (take pass-length (repeatedly #(get-single-word datab (generate-number-seq key-length key-hi))))))
+  (take pass-length (repeatedly #(get-single-word datab (generate-number-string key-length key-hi))))))
 
-;(construct-password 4 5 6 "resources/wordDatabase.txt")
-
-(defn nickname-replace [password]
+(defn nickname-replace
   "Replaces difficult to pronounce characters with a corresponding word, for easy reading."
+  [password]
+  {:pre [(instance? String password)]}
   (let [replace-map {"!" "bang"
                      "\"" "quote"
                      "#" "hash"
                      "$" "bucks"
                      "%" "ears"
                      "&" "and"
-
                      "`" "ding"
                      "~" "twiddle"
-
                      "@" "at"
-
-
-
                      "^" "hat"
-
                      "*" "star"
                      "(" "frown"
                      ")" "smile"
@@ -69,37 +76,10 @@
                      "]" "duh"
                      "|" "pole"
                      ":" "eyes"
-                     "\\" "back"}]
-  (clojure.string/replace password #"!|
-                          |\"
-                          |\#" replace-map)))
-
-
-
-;66632	!
-;66633	!!
-;66634	"
-;66635	#
-;66636	##
-;66641	$
-;66642	$$
-;66643	%
-;66644	%%
-;66645	&
-;66646	(
-;66651	()
-;66652	)
-;66653	*
-;66654	**
-;66655	+
-;66656	-
-;66661	:
-;66662	;
-;66663	=
-;66664	?
-;66665	??
-;66666	@
-
+                     ;"\\" "back"
+                     }]
+  (clojure.string/replace
+    password #"!|\"|\#|\$|%|&|`|~|@|\^|\*|\(|\)|\_|\-|\+|=|\{|\}|\[|\]|\||:|\\." replace-map)))
 
 (defn display-to-console [word-list]
   (println (clojure.string/join " " word-list)))
@@ -107,12 +87,20 @@
 (defn default-database-location []
   (str (System/getProperty "user.home") "/bin/harbor/wordDatabase.txt"))
 
-(defn fetch-database []
-  (fs/exists? (default-database-location)))
+(defn valid-arguments?
+  "Returns true if given argument is valid, nil otherwise."
+  [num-words]
+  {:pre [(string? num-words)
+         (and (number? (read-string num-words))
+         (pos? (read-string num-words)))]}
+  true)
 
 (defn -main
   "returns a password of length num-words."
   [num-words]
-  (when (fetch-database)
-    (->> (construct-password (read-string num-words) 5 6 (default-database-location))
-         (display-to-console))))
+  (try
+    (valid-arguments? num-words)
+    (when (fs/exists? (default-database-location))
+      (->> (construct-password (read-string num-words) 5 6 (default-database-location))
+           (display-to-console)))
+  (catch Exception e (str "Invalid argument, argument must be a positive integer."))))
