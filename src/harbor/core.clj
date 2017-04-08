@@ -90,21 +90,21 @@
 (defn valid-arguments?
   "Returns true if given argument is valid, nil otherwise."
   [num-words]
-  {:pre [(string? num-words)
-         (and (number? (read-string num-words))
-         (pos? (read-string num-words)))]}
-  true)
+  (try
+    (cond
+     (not (string? num-words)) false
+     (not (number? (read-string num-words))) false
+     (not (pos? (read-string num-words))) false
+     :else true)
+  (catch Exception e false)))
 
 (defn -main
   "returns a password of length num-words."
   [num-words]
-  (try
-    (let [preped-argument (if (or (nil? num-words) (empty? num-words)) "3" num-words)]
-      (valid-arguments? preped-argument)
-      (when (fs/exists? (default-database-location))
-        (->> (construct-password (read-string preped-argument) 5 6 (default-database-location))
-             (display-to-console))
-      ))
-  (catch Exception e (str "Invalid argument, argument must be a positive integer."))))
-
-(-main "3")
+    (let [defaulted-argument (if (or (nil? num-words) (empty? num-words)) "3" num-words)]
+      (cond
+       (not (valid-arguments? defaulted-argument)) (println "Invalid argument, argument must be a positive integer.")
+       (not (fs/exists? (default-database-location))) (println "Error, cannot access word database")
+       :else  (->> (construct-password (read-string defaulted-argument) 5 6 (default-database-location))
+              (display-to-console))
+       )))
