@@ -99,8 +99,12 @@
   "returns a password of length num-words."
   [num-words]
   (try
-    (valid-arguments? num-words)
-    (when (fs/exists? (default-database-location))
-      (->> (construct-password (read-string num-words) 5 6 (default-database-location))
-           (display-to-console)))
+    (let [preped-argument (if (or (nil? num-words) (empty? num-words)) "3" num-words)]
+      (valid-arguments? preped-argument)
+      (when (fs/exists? (default-database-location))
+        (->> (construct-password (read-string preped-argument) 5 6 (default-database-location))
+             (display-to-console))
+      ))
   (catch Exception e (str "Invalid argument, argument must be a positive integer."))))
+
+(-main "3")
