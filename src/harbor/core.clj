@@ -35,7 +35,7 @@
 (defn construct-password
   "Constructs a random password consisting of 'pass-length' number of words from the map associated with data found at 'location'.
   Note, 'key-length' and 'key-hi' refer to how many numbers / maximum numbers are associated with the keys found in the data at 'location'."
-  [pass-length key-length key-hi location]
+  ([pass-length key-length key-hi location]
   {:pre [(number? pass-length)
          (pos? pass-length)
          (number? key-length)
@@ -48,6 +48,9 @@
 
   (let [datab (map-from-datab location)]
   (take pass-length (repeatedly #(get-single-word datab (generate-number-string key-length key-hi))))))
+
+([pass-length location]
+ (construct-password pass-length 5 6 location)))
 
 (defn nickname-replace
   "Replaces difficult to pronounce characters with a corresponding word, for easy reading."
@@ -99,12 +102,15 @@
   (catch Exception e false)))
 
 (defn -main
-  "returns a password of length num-words."
-  [num-words]
-    (let [defaulted-argument (if (or (nil? num-words) (empty? num-words)) "3" num-words)]
+  "returns a password of a given length."
+  ([]
+   (-main 5))
+  ([num-words]
+    (let [default-size "5"
+          defaulted-argument (if (or (nil? num-words) (empty? num-words)) default-size num-words)]
       (cond
        (not (valid-arguments? defaulted-argument)) (println "Invalid argument, argument must be a positive integer.")
        (not (fs/exists? (default-database-location))) (println "Error, cannot access word database")
-       :else  (->> (construct-password (read-string defaulted-argument) 5 6 (default-database-location))
-              (display-to-console))
-       )))
+       :else  (->> (construct-password (read-string defaulted-argument)(default-database-location))
+              (display-to-console))))))
+(-main "")
