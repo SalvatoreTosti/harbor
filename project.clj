@@ -5,7 +5,9 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [me.raynes/fs "1.4.6"]]
-  :plugins [[lein-kibit "0.1.2"]]
+  :plugins [[lein-kibit "0.1.2"]
+            [lein-bin "0.3.5"]]
   :main ^:skip-aot harbor.core
+  :bin {:name "harbor"}
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

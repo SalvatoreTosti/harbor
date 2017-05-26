@@ -1,3 +1,5 @@
 .nrepl-port
 .lein*
 target/*
+.DS_STORE
+
