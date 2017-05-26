@@ -1,15 +1,14 @@
 (ns harbor.core
   (:gen-class)
   (:require [harbor.secureRandom :as sec-rand]
-            [me.raynes.fs :as fs]))
+            [me.raynes.fs :as fs]
+            [clojure.java.io :as io]))
 
-(defn read-datab [location]
-  {:pre [(fs/exists? location)]}
-  (slurp location))
+ (defn read-datab []
+     (slurp (io/resource "wordDatabase.txt")))
 
-(defn map-from-datab [location]
-  {:pre [(fs/exists? location)]}
-  (->> (read-datab location)
+(defn map-from-datab []
+  (->> (read-datab)
        (clojure.string/split-lines)
        (map #(clojure.string/split % #"\t"))
        (into {})))
@@ -36,10 +35,10 @@
 (defn construct-password
   "Constructs a random password consisting of 'pass-length' number of words from the map associated with data found at 'location'.
   Note, 'key-length' and 'key-hi' refer to how many numbers / maximum numbers are associated with the keys found in the data at 'location'."
-  ([pass-length location]
-   (construct-password pass-length 5 6 location))
+  ([pass-length]
+   (construct-password pass-length 5 6))
 
-  ([pass-length key-length key-hi location]
+  ([pass-length key-length key-hi]
   {:pre [(number? pass-length)
          (pos? pass-length)
          (number? key-length)
@@ -47,10 +46,9 @@
          (= key-length 5) ;current implementation requires that key length be 5
          (number? key-hi)
          (pos? key-hi)
-         (< key-hi 10)
-         (fs/exists? location)]}
+         (< key-hi 10)]}
 
-  (let [datab (map-from-datab location)]
+  (let [datab (map-from-datab)]
   (take pass-length (repeatedly #(get-single-word datab (generate-number-string key-length key-hi))))))
   )
 
@@ -89,9 +87,6 @@
 (defn display-to-console [word-list]
   (println (clojure.string/join " " word-list)))
 
-(defn word-database-path []
-  (str (System/getProperty "user.home") "/bin/harbor/wordDatabase.txt"))
-
 (defn valid-arguments?
   "Returns true if given argument can be cast to a positive integer, false otherwise."
   [num-words]
@@ -112,6 +107,5 @@
           defaulted-argument (if (or (nil? num-words) (empty? num-words)) default-size num-words)]
       (cond
        (not (valid-arguments? defaulted-argument)) (println "Invalid argument, argument must be a positive integer.")
-       (not (fs/exists? (word-database-path))) (println "Error, cannot access word database")
-       :else  (->> (construct-password (read-string defaulted-argument)(word-database-path))
+       :else  (->> (construct-password (read-string defaulted-argument))
               (display-to-console))))))
