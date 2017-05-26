@@ -19,22 +19,26 @@
   [length hi]
   {:pre [(number? length)
          (pos? length)
+         (integer? length)
          (number? hi)
          (pos? hi)
+         (integer? hi)
          (< hi 10)]}
-  (clojure.string/join(take length (repeatedly #(sec-rand/secure-generate-number hi)))))
+  (clojure.string/join (take length (repeatedly #(sec-rand/secure-generate-number hi)))))
 
 (defn get-single-word
   "Returns corresponding value associated with 'key-string' from map-datab"
   [map-datab key-string]
   {:pre [(not-empty map-datab)
          (not-empty key-string)]}
-
   (map-datab key-string))
 
 (defn construct-password
   "Constructs a random password consisting of 'pass-length' number of words from the map associated with data found at 'location'.
   Note, 'key-length' and 'key-hi' refer to how many numbers / maximum numbers are associated with the keys found in the data at 'location'."
+  ([pass-length location]
+   (construct-password pass-length 5 6 location))
+
   ([pass-length key-length key-hi location]
   {:pre [(number? pass-length)
          (pos? pass-length)
@@ -48,9 +52,7 @@
 
   (let [datab (map-from-datab location)]
   (take pass-length (repeatedly #(get-single-word datab (generate-number-string key-length key-hi))))))
-
-([pass-length location]
- (construct-password pass-length 5 6 location)))
+  )
 
 (defn nickname-replace
   "Replaces difficult to pronounce characters with a corresponding word, for easy reading."
@@ -87,30 +89,29 @@
 (defn display-to-console [word-list]
   (println (clojure.string/join " " word-list)))
 
-(defn default-database-location []
+(defn word-database-path []
   (str (System/getProperty "user.home") "/bin/harbor/wordDatabase.txt"))
 
 (defn valid-arguments?
-  "Returns true if given argument is valid, nil otherwise."
+  "Returns true if given argument can be cast to a positive integer, false otherwise."
   [num-words]
   (try
-    (cond
-     (not (string? num-words)) false
-     (not (number? (read-string num-words))) false
-     (not (pos? (read-string num-words))) false
-     :else true)
+    (and
+     (string? num-words)
+     (number? (read-string num-words))
+     (integer? (read-string num-words))
+     (pos? (read-string num-words)))
   (catch Exception e false)))
 
 (defn -main
   "returns a password of a given length."
   ([]
-   (-main 5))
+   (-main "5"))
   ([num-words]
     (let [default-size "5"
           defaulted-argument (if (or (nil? num-words) (empty? num-words)) default-size num-words)]
       (cond
        (not (valid-arguments? defaulted-argument)) (println "Invalid argument, argument must be a positive integer.")
-       (not (fs/exists? (default-database-location))) (println "Error, cannot access word database")
-       :else  (->> (construct-password (read-string defaulted-argument)(default-database-location))
+       (not (fs/exists? (word-database-path))) (println "Error, cannot access word database")
+       :else  (->> (construct-password (read-string defaulted-argument)(word-database-path))
               (display-to-console))))))
-(-main "")

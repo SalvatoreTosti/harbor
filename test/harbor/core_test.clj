@@ -5,22 +5,19 @@
 (deftest read-datab-test
   (testing "read-datab on bad location"
     (is (thrown? AssertionError (read-datab nil)))
-    (is (thrown? AssertionError (read-datab "this-does-not-exist.txt")))
-    ))
+    (is (thrown? AssertionError (read-datab "this-does-not-exist.txt")))))
 
 (deftest map-from-datab-test
   (testing "map-from-datab on bad location"
     (is (thrown? AssertionError (map-from-datab nil)))
-    (is (thrown? AssertionError (map-from-datab "this-does-not-exist.txt")))
-  ))
+    (is (thrown? AssertionError (map-from-datab "this-does-not-exist.txt")))))
 
 (deftest generate-number-string-test
   (testing "generate-number-string bad input"
     (is (thrown? AssertionError (generate-number-string nil nil)))
     (is (thrown? AssertionError (generate-number-string 0 1)))
     (is (thrown? AssertionError (generate-number-string 1 10)))
-    (is (thrown? AssertionError (generate-number-string 1 0)))
-    )
+    (is (thrown? AssertionError (generate-number-string 1 0))))
   (testing "generate-number-string regular input"
     (is (= "1"  (generate-number-string 1 1)))
     (is (= 1 (count (generate-number-string 1 1))))
@@ -53,21 +50,17 @@
     (is (thrown? AssertionError (construct-password 1 5 0 "resources/wordDatabaseShort.txt")))
     (is (thrown? AssertionError (construct-password 1 5 -1 "resources/wordDatabaseShort.txt")))
 
-    (is (thrown? AssertionError (construct-password 1 5 1 "this-does-not-exist.txt")))
-  )
+    (is (thrown? AssertionError (construct-password 1 5 1 "this-does-not-exist.txt"))))
 
   (testing "construct-password regular input"
     (is (every? #(re-matches #"[a-z]+" %) (construct-password 1 5 1 "resources/wordDatabase.txt")))
     (is (every? #(re-matches #"[a-z]+" %) (construct-password 2 5 1 "resources/wordDatabase.txt")))
-    (is (every? #(re-matches #"[a-z]+" %) (construct-password 2 5 2 "resources/wordDatabase.txt")))
-    )
-  )
+    (is (every? #(re-matches #"[a-z]+" %) (construct-password 2 5 2 "resources/wordDatabase.txt")))))
 
 (deftest nickname-replace-test
   (testing "nickname-replace bad input"
     (is (thrown? AssertionError (nickname-replace 1)))
-    (is (thrown? AssertionError (nickname-replace :not-a-string)))
-  )
+    (is (thrown? AssertionError (nickname-replace :not-a-string))))
   (testing "nickname-replace regular input"
     (are [x y] (= (nickname-replace x) y)
     "!" "bang"
@@ -98,11 +91,9 @@
 
 (deftest valid-arguments-test
   (testing "valid-arguments? bad input"
-    (is (thrown? AssertionError (valid-arguments? "test"))
-    (is (thrown? AssertionError (valid-arguments? "0"))
-    (is (thrown? AssertionError (valid-arguments? "-1"))
-    ))))
+    (is (= false (valid-arguments? "test")))
+    (is (= false (valid-arguments? "0")))
+    (is (= false (valid-arguments? "-1"))))
   (testing "valid-arguments regular input"
     (is (= true (valid-arguments? "1")))
-    (is (= true (valid-arguments? "10")))
-    ))
+    (is (= true (valid-arguments? "10")))))
