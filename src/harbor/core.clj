@@ -1,7 +1,7 @@
 (ns harbor.core
   (:gen-class)
   (:require [harbor.secureRandom :as sec-rand]
-            [me.raynes.fs :as fs]
+            [clojure.tools.cli :as cli]
             [clojure.java.io :as io]))
 
  (defn read-datab []
@@ -98,14 +98,42 @@
      (pos? (read-string num-words)))
   (catch Exception e false)))
 
-(defn -main
-  "returns a password of a given length."
-  ([]
-   (-main "5"))
-  ([num-words]
-    (let [default-size "5"
-          defaulted-argument (if (or (nil? num-words) (empty? num-words)) default-size num-words)]
-      (cond
-       (not (valid-arguments? defaulted-argument)) (println "Invalid argument, argument must be a positive integer.")
-       :else  (->> (construct-password (read-string defaulted-argument))
-              (display-to-console))))))
+;; (defn generate-passphrase
+;;   [num-words]
+;;    (let [default-size "5"
+;;           defaulted-argument (if (or (nil? num-words) (empty? num-words)) default-size num-words)]
+;;       (cond
+;;        (not (valid-arguments? defaulted-argument)) (println "Invalid argument, argument must be a positive integer.")
+;;        :else  (->> (construct-password (read-string defaulted-argument))
+;;               (display-to-console)))))
+
+(defn generate-passphrase
+  [num-words]
+  (->> (construct-password num-words)
+       (display-to-console)))
+
+(def cli-options
+  [["-r" "--repeat COUNT" "Repeats random generation"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 %) "Must be a number greater than 0"]]
+   ["-l" "--length LENGTH" "Length of passphrase sequence"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 %) "Must be a number greater than 0"]]
+   ["-v" "--version" "Version information"]
+   ["-h" "--help"]])
+
+(defn -main [& args]
+  "returns a passphrase of a given length."
+  (let [{:keys [options arguments summary errors]} (cli/parse-opts args cli-options)]
+     (cond
+      (some? errors) (apply println errors)
+      (:help options) (println
+                       "harbor is a commandline password generation tool.\n"
+                       summary)
+      (:version options) (println
+                          "harbor v0.2.0")
+      :else
+      (->>
+       #(generate-passphrase (or (:length options) 5))
+       (repeatedly (or (:repeat options) 1))
+       (doall)))))
