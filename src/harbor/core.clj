@@ -87,29 +87,31 @@
 (defn display-to-console [word-list]
   (println (clojure.string/join " " word-list)))
 
-(defn valid-arguments?
-  "Returns true if given argument can be cast to a positive integer, false otherwise."
-  [num-words]
-  (try
-    (and
-     (string? num-words)
-     (number? (read-string num-words))
-     (integer? (read-string num-words))
-     (pos? (read-string num-words)))
-  (catch Exception e false)))
+(defn special-character
+  "Returns a single random character from a list of common 'special' characters."
+  []
+  (->
+  '("!","\"","#","$","%","&","`","~","@","^","*","(",")","_","-","+","=","{","}","[","]","|",":") ;"\\" "back"
+   (rand-nth)))
 
-;; (defn generate-passphrase
-;;   [num-words]
-;;    (let [default-size "5"
-;;           defaulted-argument (if (or (nil? num-words) (empty? num-words)) default-size num-words)]
-;;       (cond
-;;        (not (valid-arguments? defaulted-argument)) (println "Invalid argument, argument must be a positive integer.")
-;;        :else  (->> (construct-password (read-string defaulted-argument))
-;;               (display-to-console)))))
+(defn insert-special
+  "Inserts a random 'special' character into a given collection."
+  [coll]
+  (let [split-list (-> (rand-int (inc (count coll)))
+                     (split-at coll))]
+    (concat (first split-list) (conj [] (special-character)) (second split-list))))
+
+ (defn insert-special-rec
+  "Inserts multiple random 'special' characters into a given collection."
+   [coll, remaining-specials]
+   (if (not (pos? remaining-specials))
+     coll
+     (insert-special-rec (insert-special coll) (dec remaining-specials))))
 
 (defn generate-passphrase
-  [num-words]
-  (->> (construct-password num-words)
+  [num-words, num-specials]
+  (-> (construct-password num-words)
+       (insert-special-rec num-specials)
        (display-to-console)))
 
 (def cli-options
@@ -119,6 +121,12 @@
    ["-l" "--length LENGTH" "Length of passphrase sequence"
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %) "Must be a number greater than 0"]]
+   ["-w" "--width WIDTH" "Minimum length for individual words in a sequence"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 % 6) "Must be a number greater than 0 and less than 6"]]
+   ["-s" "--special COUNT" "Inserts a given number of special characters into a sequence"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 %)]]
    ["-v" "--version" "Version information"]
    ["-h" "--help"]])
 
@@ -134,6 +142,6 @@
                           "harbor v0.2.0")
       :else
       (->>
-       #(generate-passphrase (or (:length options) 5))
+       #(generate-passphrase (or (:length options) 5) (or (:special options) 0))
        (repeatedly (or (:repeat options) 1))
        (doall)))))
