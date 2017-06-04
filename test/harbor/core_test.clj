@@ -2,15 +2,15 @@
   (:require [clojure.test :refer :all]
             [harbor.core :refer :all]))
 
-(deftest read-datab-test
-  (testing "read-datab on bad location"
-    (is (thrown? AssertionError (read-datab nil)))
-    (is (thrown? AssertionError (read-datab "this-does-not-exist.txt")))))
+;; (deftest read-datab-test
+;;   (testing "read-datab on bad location"
+;;     (is (thrown? AssertionError (read-datab nil)))
+;;     (is (thrown? AssertionError (read-datab "this-does-not-exist.txt")))))
 
-(deftest map-from-datab-test
-  (testing "map-from-datab on bad location"
-    (is (thrown? AssertionError (map-from-datab nil)))
-    (is (thrown? AssertionError (map-from-datab "this-does-not-exist.txt")))))
+;; (deftest map-from-datab-test
+;;   (testing "map-from-datab on bad location"
+;;     (is (thrown? AssertionError (map-from-datab nil)))
+;;     (is (thrown? AssertionError (map-from-datab "this-does-not-exist.txt")))))
 
 (deftest generate-number-string-test
   (testing "generate-number-string bad input"
@@ -36,26 +36,24 @@
 
 (deftest construct-password-test
   (testing "construct-password bad input"
-    (is (thrown? AssertionError (construct-password "1" 5 1 "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password 0 5 1 "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password -1 5 1 "resources/wordDatabaseShort.txt")))
+    (is (thrown? AssertionError (construct-password "1" 5 1 )))
+    (is (thrown? AssertionError (construct-password 0 5 1 )))
+    (is (thrown? AssertionError (construct-password -1 5 1 )))
 
-    (is (thrown? AssertionError (construct-password 1 "1" 1 "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password 1 0 1 "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password 1 -1 1 "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password 1 4 1 "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password 1 6 1 "resources/wordDatabaseShort.txt")))
+    (is (thrown? AssertionError (construct-password 1 "1" 1 )))
+    (is (thrown? AssertionError (construct-password 1 0 1 )))
+    (is (thrown? AssertionError (construct-password 1 -1 1 )))
+    (is (thrown? AssertionError (construct-password 1 4 1 )))
+    (is (thrown? AssertionError (construct-password 1 6 1 )))
 
-    (is (thrown? AssertionError (construct-password 1 5 "1" "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password 1 5 0 "resources/wordDatabaseShort.txt")))
-    (is (thrown? AssertionError (construct-password 1 5 -1 "resources/wordDatabaseShort.txt")))
-
-    (is (thrown? AssertionError (construct-password 1 5 1 "this-does-not-exist.txt"))))
+    (is (thrown? AssertionError (construct-password 1 5 "1" )))
+    (is (thrown? AssertionError (construct-password 1 5 0 )))
+    (is (thrown? AssertionError (construct-password 1 5 -1 ))))
 
   (testing "construct-password regular input"
-    (is (every? #(re-matches #"[a-z]+" %) (construct-password 1 5 1 "resources/wordDatabase.txt")))
-    (is (every? #(re-matches #"[a-z]+" %) (construct-password 2 5 1 "resources/wordDatabase.txt")))
-    (is (every? #(re-matches #"[a-z]+" %) (construct-password 2 5 2 "resources/wordDatabase.txt")))))
+    (is (every? #(re-matches #"[a-z]+" %) (construct-password 1 5 1 )))
+    (is (every? #(re-matches #"[a-z]+" %) (construct-password 2 5 1 )))
+    (is (every? #(re-matches #"[a-z]+" %) (construct-password 2 5 2 )))))
 
 (deftest nickname-replace-test
   (testing "nickname-replace bad input"
@@ -88,12 +86,3 @@
     ":" "eyes"
     ;"\\" "back"
     )))
-
-(deftest valid-arguments-test
-  (testing "valid-arguments? bad input"
-    (is (= false (valid-arguments? "test")))
-    (is (= false (valid-arguments? "0")))
-    (is (= false (valid-arguments? "-1"))))
-  (testing "valid-arguments regular input"
-    (is (= true (valid-arguments? "1")))
-    (is (= true (valid-arguments? "10")))))
