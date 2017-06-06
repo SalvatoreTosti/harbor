@@ -2,13 +2,12 @@
   (:gen-class)
   (:require [harbor.secureRandom :as sec-rand]
             [clojure.tools.cli :as cli]
-            [clojure.java.io :as io]))
-
- (defn read-datab []
-     (slurp (io/resource "wordDatabase.txt")))
+            [clojure.java.io :as io]
+            [clojure.string :as string]))
 
 (defn map-from-datab []
-  (->> (read-datab)
+  "Reads word database into a map."
+  (->> (slurp (io/resource "wordDatabase.txt"))
        (clojure.string/split-lines)
        (map #(clojure.string/split % #"\t"))
        (into {})))
@@ -114,6 +113,45 @@
        (insert-special-rec num-specials)
        (display-to-console)))
 
+(defn valid-arg-count?
+  [args]
+   (<= 0 (count args)))
+
+(defn valid-arg-integer?
+  [arg]
+  (try
+    (if (< 0 (Integer/parseInt arg)) true false)
+
+    (catch NumberFormatException e false)
+    (catch Exception e false)))
+
+(defn validate-arguments
+  [args]
+  (cond
+   (or (nil? args) (zero? (count args)))
+   {:message "" :action "continue"}
+
+   (not (valid-arg-count? args))
+   {:message "Invalid number of arguments, the harbor executable only takes 1 argument." :action "exit"}
+
+   (not (valid-arg-integer? (first args)))
+   {:message "Invalid argument supplied, argument must be a positive integer." :action "exit"}
+
+   :else {:message "" :action "continue" :arguments (Integer/parseInt (first args))}))
+
+(defn error-check
+  [status-map]
+   (if (= (:action status-map) "exit")
+     (println (:message status-map))
+    status-map))
+
+(defn engine
+  [options, arguments]
+  (->>
+   #(generate-passphrase (or (:length options) arguments 5) (or (:special options) 0))
+   (repeatedly (or (:repeat options) 1))
+   (doall)))
+
 (def cli-options
   [["-r" "--repeat COUNT" "Repeats random generation"
     :parse-fn #(Integer/parseInt %)
@@ -128,20 +166,23 @@
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %)]]
    ["-v" "--version" "Version information"]
-   ["-h" "--help"]])
+   ["-h" "--help" "Help information"]])
 
 (defn -main [& args]
   "returns a passphrase of a given length."
-  (let [{:keys [options arguments summary errors]} (cli/parse-opts args cli-options)]
-     (cond
-      (some? errors) (apply println errors)
-      (:help options) (println
-                       "harbor is a commandline password generation tool.\n"
-                       summary)
-      (:version options) (println
-                          "harbor v0.2.0")
-      :else
-      (->>
-       #(generate-passphrase (or (:length options) 5) (or (:special options) 0))
-       (repeatedly (or (:repeat options) 1))
-       (doall)))))
+  (let [{:keys [options arguments summary errors]} (cli/parse-opts args cli-options)
+        status-map (->
+                    (cond
+                     (some? errors) {:message (string/join "\n" errors)
+                                     :action "exit"}
+                     (:help options) {:message (string/join "\n"
+                                                            ["harbor is a commandline password generation tool.", summary])
+                                      :action "exit"}
+                     (:version options) {:message "harbor v0.2.0"
+                                         :action "exit"}
+                     :else (validate-arguments arguments))
+      (error-check))]
+    (when status-map (engine options (:arguments status-map)))
+    ))
+
+(-main "-r " "6")
