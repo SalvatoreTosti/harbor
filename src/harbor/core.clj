@@ -1,9 +1,17 @@
 (ns harbor.core
   (:gen-class)
-  (:require [harbor.secureRandom :as sec-rand]
-            [clojure.tools.cli :as cli]
-            [clojure.java.io :as io]
-            [clojure.string :as string]))
+  (:require
+   [clj-http.client :as client]
+   [harbor.secureRandom :as sec-rand]
+   [harbor.output :as output]
+   [clojure.tools.cli :as cli]
+   [clojure.java.io :as io]
+   [clojure.string :as string]))
+
+;(clint/get GET /repos/:owner/:repo/releases/latest
+;           "http://example.com/resources/3")
+
+;(println (client/get "https://api.github.com/repos/SalvatoreTosti/harbor/releases/tags/v0.1"))
 
 (defn map-from-datab []
   "Reads word database into a map."
@@ -48,8 +56,7 @@
          (< key-hi 10)]}
 
   (let [datab (map-from-datab)]
-  (take pass-length (repeatedly #(get-single-word datab (generate-number-string key-length key-hi))))))
-  )
+  (take pass-length (repeatedly #(get-single-word datab (generate-number-string key-length key-hi)))))))
 
 (defn nickname-replace
   "Replaces difficult to pronounce characters with a corresponding word, for easy reading."
@@ -83,9 +90,6 @@
   (clojure.string/replace
     password #"!|\"|\#|\$|%|&|`|~|@|\^|\*|\(|\)|\_|\-|\+|=|\{|\}|\[|\]|\||:|\\." replace-map)))
 
-(defn display-to-console [word-list]
-  (println (clojure.string/join " " word-list)))
-
 (defn special-character
   "Returns a single random character from a list of common 'special' characters."
   []
@@ -111,18 +115,67 @@
   [num-words, num-specials]
   (-> (construct-password num-words)
        (insert-special-rec num-specials)
-       (display-to-console)))
+       (output/console-out)))
+
+(defn remove-nth
+  [vect index]
+  (cond
+   (nil? vect) nil
+   (empty? vect) nil
+   (< index 0)
+   (remove-nth vect 0)
+   (>= index (count vect) )
+   (remove-nth vect (dec (count vect)))
+  :else
+   (let [target (nth vect index)
+        head (take index vect)
+        tail (drop (inc index) vect)]
+    {:target target :new-coll (concat head tail)})))
+
+(defn remove-random
+  [vect]
+  (remove-nth vect (rand-int (count vect))))
+
+(defn select-random-rec
+  [coll selected number]
+  (if (or (not (pos? number))
+          (empty? coll))
+    selected
+  (let [removal (remove-random coll)]
+    (select-random-rec (:new-coll removal) (conj selected (:target removal)) (dec number)))))
+
+(defn select-random
+  [coll number]
+  (select-random-rec coll '() number))
+
+(defn split-nth
+  [vect index]
+  (cond
+   (nil? vect) nil
+   (empty? vect) nil
+   (< index 0)
+   (split-nth vect 0)
+   (>= index (count vect) )
+   (split-nth vect (dec (count vect)))
+  :else
+   (let [target (nth vect index)
+        head (take index vect)
+        tail (drop (inc index) vect)]
+    {:target target :head head :tail tail})))
+
+(defn is-lower?
+  [st]
+  (->> (map #(Character/isLowerCase %) st)
+       (every? true?)))
 
 (defn valid-arg-count?
   [args]
-   (<= 0 (count args)))
+  (<= 0 (count args)))
 
 (defn valid-arg-integer?
   [arg]
   (try
     (if (< 0 (Integer/parseInt arg)) true false)
-
-    (catch NumberFormatException e false)
     (catch Exception e false)))
 
 (defn validate-arguments
@@ -178,11 +231,8 @@
                      (:help options) {:message (string/join "\n"
                                                             ["harbor is a commandline password generation tool.", summary])
                                       :action "exit"}
-                     (:version options) {:message "harbor v0.2.0"
+                     (:version options) {:message "harbor v0.2.1"
                                          :action "exit"}
                      :else (validate-arguments arguments))
       (error-check))]
-    (when status-map (engine options (:arguments status-map)))
-    ))
-
-(-main "-r " "6")
+    (when status-map (engine options (:arguments status-map)))))
