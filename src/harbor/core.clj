@@ -4,9 +4,31 @@
    [clj-http.client :as client]
    [harbor.secureRandom :as sec-rand]
    [harbor.output :as output]
+   [clj-kit.string-kit :as string-kit]
    [clojure.tools.cli :as cli]
    [clojure.java.io :as io]
    [clojure.string :as string]))
+
+(defn capitalize-letters
+  [st ct]
+  (cond
+   (not (pos? ct)) st
+   (string-kit/is-upper? st) st
+   (not (string-kit/contains-alpha? st)) st
+
+   :else (let [split (split-nth st (rand-int (count st)))]
+           (if (and
+                (string-kit/is-alpha? (str (:target split)))
+                (string-kit/is-lower? (str (:target split))))
+             (capitalize-letters
+              (apply str
+                     (concat
+                      (:head split)
+                      (string/capitalize (:target split))
+                      (:tail split)))
+              (dec ct))
+
+             (capitalize-letters st ct)))))
 
 ;(clint/get GET /repos/:owner/:repo/releases/latest
 ;           "http://example.com/resources/3")
@@ -112,10 +134,13 @@
      (insert-special-rec (insert-special coll) (dec remaining-specials))))
 
 (defn generate-passphrase
-  [num-words, num-specials]
+  [num-words, num-specials, num-capitals]
   (-> (construct-password num-words)
-       (insert-special-rec num-specials)
-       (output/console-out)))
+      (insert-special-rec num-specials)
+      (#(clojure.string/join " " %))
+      (capitalize-letters num-capitals)
+      (output/console-out)
+      ))
 
 (defn remove-nth
   [vect index]
@@ -163,11 +188,6 @@
         tail (drop (inc index) vect)]
     {:target target :head head :tail tail})))
 
-(defn is-lower?
-  [st]
-  (->> (map #(Character/isLowerCase %) st)
-       (every? true?)))
-
 (defn valid-arg-count?
   [args]
   (<= 0 (count args)))
@@ -201,7 +221,10 @@
 (defn engine
   [options, arguments]
   (->>
-   #(generate-passphrase (or (:length options) arguments 5) (or (:special options) 0))
+   #(generate-passphrase
+     (or (:length options) arguments 5)
+     (or (:special options) 0)
+     (or (:capital options) 0))
    (repeatedly (or (:repeat options) 1))
    (doall)))
 
@@ -216,6 +239,9 @@
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 6) "Must be a number greater than 0 and less than 6"]]
    ["-s" "--special COUNT" "Inserts a given number of special characters into a sequence"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 %)]]
+   ["-c" "--capital COUNT" "Capitalizes a given number of characters in the generated sequence"
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %)]]
    ["-v" "--version" "Version information"]

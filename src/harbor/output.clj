@@ -3,8 +3,9 @@
   (:require
    [harbor.clipboard :as clipboard]))
 
-(defn console-out [word-list]
-  (println (clojure.string/join " " word-list)))
+(defn console-out
+  [st]
+  (println st))
 
 (defn wait-print
   ([period]
