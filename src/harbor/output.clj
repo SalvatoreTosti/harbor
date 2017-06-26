@@ -21,7 +21,8 @@
 
 (defn clipboard-out
   [pass]
-  (println "password written to clipboard, valid for 15 seconds")
-  (clipboard/spit-clipboard pass)
-  (wait-print 10)
-  (clipboard/spit-clipboard "clipboard cleared!"))
+  (let [original-clipping (clipboard/slurp-clipboard)]
+    (println "password written to clipboard, valid for 15 seconds")
+    (clipboard/spit-clipboard pass)
+    (wait-print 10)
+    (clipboard/spit-clipboard "")))

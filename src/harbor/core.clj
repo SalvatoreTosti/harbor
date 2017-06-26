@@ -123,8 +123,10 @@
   "Inserts a random 'special' character into a given collection."
   [coll]
   (let [split-list (-> (rand-int (inc (count coll)))
-                     (split-at coll))]
-    (concat (first split-list) (conj [] (special-character)) (second split-list))))
+                       (split-at coll))]
+    (concat (first split-list)
+            (conj [] (special-character))
+            (second split-list))))
 
  (defn insert-special-rec
   "Inserts multiple random 'special' characters into a given collection."
@@ -133,14 +135,40 @@
      coll
      (insert-special-rec (insert-special coll) (dec remaining-specials))))
 
+ (defn number-character
+   "Returns a single random numeric character."
+   []
+   (->
+    '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")
+    (rand-nth)))
+
+ (defn insert-number
+   "Inserts a random numeric character into a given collection."
+  [coll]
+  (let [split-list (->
+                    (rand-int (inc (count coll)))
+                    (split-at coll))]
+    (concat (first split-list)
+            (conj []
+                  (number-character))
+                  (second split-list))))
+
+ (defn insert-number-rec
+  "Inserts multiple random numeric characters into a given collection."
+   [coll, remaining-numbers]
+   (if (not (pos? remaining-numbers))
+     coll
+     (insert-number-rec (insert-number coll) (dec remaining-numbers))))
+
 (defn generate-passphrase
-  [num-words, num-specials, num-capitals]
+  [num-words, num-specials, num-capitals, num-numbers]
   (-> (construct-password num-words)
       (insert-special-rec num-specials)
+      (insert-number-rec num-numbers)
       (#(clojure.string/join " " %))
       (capitalize-letters num-capitals)
-      (output/console-out)
-      ))
+      (output/clipboard-out)))
+
 
 (defn remove-nth
   [vect index]
@@ -224,7 +252,8 @@
    #(generate-passphrase
      (or (:length options) arguments 5)
      (or (:special options) 0)
-     (or (:capital options) 0))
+     (or (:capital options) 0)
+     (or (:number options) 0))
    (repeatedly (or (:repeat options) 1))
    (doall)))
 
@@ -239,6 +268,9 @@
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 6) "Must be a number greater than 0 and less than 6"]]
    ["-s" "--special COUNT" "Inserts a given number of special characters into a sequence"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 %)]]
+   ["-n" "--number COUNT" "Inserts a given number of numeric characters into a sequence"
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %)]]
    ["-c" "--capital COUNT" "Capitalizes a given number of characters in the generated sequence"
