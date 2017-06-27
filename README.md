@@ -1,6 +1,6 @@
 # harbor
 
-A ![diceware](http://world.std.com/~reinhold/diceware.html)-like password generator for your command prompt.
+A ![diceware](http://world.std.com/~reinhold/diceware.html)-like password generator for your command prompt.  
 __Disclaimer:__ This is a _hobbyist_ project, I do not guarantee the passwords generated are crypto-secure or anything like that.
 
 ## Installation
@@ -37,6 +37,9 @@ If no argument is specified, harbor will default to a 5 word passphrase.
 - `--length LENGTH` Length of passphrase sequence
 - `--repeat COUNT` Generates COUNT number of sequences
 - `--special COUNT` Inserts a COUNT number of special characters into a sequence
+- `--number COUNT` Inserts a given number of numeric characters into a sequence
+- `--capital COUNT` Capitalizes a given number of characters in the generated sequence
+- `--wait COUNT` Specifies the number of seconds a generated password will remain in the clipboard
 
 Have an idea for an option? File an ![issue](https://github.com/SalvatoreTosti/harbor/issues)!
 
