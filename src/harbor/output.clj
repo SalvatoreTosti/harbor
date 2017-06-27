@@ -13,16 +13,16 @@
 
   ([period symb]
   (loop [x period]
-    (when (> x 1)
+    (when (> x 0)
       (print symb)
       (Thread/sleep 1000)
       (recur (dec x))))
   (println)))
 
 (defn clipboard-out
-  [pass]
-  (let [original-clipping (clipboard/slurp-clipboard)]
-    (println "password written to clipboard, valid for 15 seconds")
+  ([pass period]
+   (let [original-clipping (clipboard/slurp-clipboard)]
+    (println "password written to clipboard, valid for " period "seconds")
     (clipboard/spit-clipboard pass)
-    (wait-print 10)
-    (clipboard/spit-clipboard "")))
+    (wait-print period)
+    (clipboard/spit-clipboard ""))))

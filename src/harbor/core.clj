@@ -161,13 +161,13 @@
      (insert-number-rec (insert-number coll) (dec remaining-numbers))))
 
 (defn generate-passphrase
-  [num-words, num-specials, num-capitals, num-numbers]
+  [num-words, num-specials, num-capitals, num-numbers, wait-period]
   (-> (construct-password num-words)
       (insert-special-rec num-specials)
       (insert-number-rec num-numbers)
       (#(clojure.string/join " " %))
       (capitalize-letters num-capitals)
-      (output/clipboard-out)))
+      (output/clipboard-out wait-period)))
 
 
 (defn remove-nth
@@ -253,7 +253,8 @@
      (or (:length options) arguments 5)
      (or (:special options) 0)
      (or (:capital options) 0)
-     (or (:number options) 0))
+     (or (:number options) 0)
+     (or (:wait options) 15))
    (repeatedly (or (:repeat options) 1))
    (doall)))
 
@@ -264,9 +265,9 @@
    ["-l" "--length LENGTH" "Length of passphrase sequence"
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %) "Must be a number greater than 0"]]
-   ["-w" "--width WIDTH" "Minimum length for individual words in a sequence"
-    :parse-fn #(Integer/parseInt %)
-    :validate [#(< 0 % 6) "Must be a number greater than 0 and less than 6"]]
+   ;["-w" "--width WIDTH" "Minimum length for individual words in a sequence"
+   ; :parse-fn #(Integer/parseInt %)
+   ; :validate [#(< 0 % 6) "Must be a number greater than 0 and less than 6"]]
    ["-s" "--special COUNT" "Inserts a given number of special characters into a sequence"
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %)]]
@@ -274,6 +275,9 @@
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %)]]
    ["-c" "--capital COUNT" "Capitalizes a given number of characters in the generated sequence"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 %)]]
+   ["-w" "--wait COUNT" "Specifies the number of seconds a generated password will remain in the clipboard"
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 %)]]
    ["-v" "--version" "Version information"]
@@ -289,7 +293,7 @@
                      (:help options) {:message (string/join "\n"
                                                             ["harbor is a commandline password generation tool.", summary])
                                       :action "exit"}
-                     (:version options) {:message "harbor v0.2.1"
+                     (:version options) {:message "harbor v0.3.0"
                                          :action "exit"}
                      :else (validate-arguments arguments))
       (error-check))]
