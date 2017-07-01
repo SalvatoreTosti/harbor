@@ -1,7 +1,5 @@
 (ns clj-kit.string-kit)
 
-
-
 (defn is-alpha?
   [st]
   (->> (map #(Character/isLetter %) st)

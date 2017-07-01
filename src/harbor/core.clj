@@ -1,39 +1,14 @@
 (ns harbor.core
   (:gen-class)
   (:require
-   [clj-http.client :as client]
    [harbor.secureRandom :as sec-rand]
    [harbor.output :as output]
+   [harbor.flags :as flags]
    [clj-kit.string-kit :as string-kit]
+   [clj-kit.coll-kit :as coll-kit]
    [clojure.tools.cli :as cli]
    [clojure.java.io :as io]
    [clojure.string :as string]))
-
-(defn capitalize-letters
-  [st ct]
-  (cond
-   (not (pos? ct)) st
-   (string-kit/is-upper? st) st
-   (not (string-kit/contains-alpha? st)) st
-
-   :else (let [split (split-nth st (rand-int (count st)))]
-           (if (and
-                (string-kit/is-alpha? (str (:target split)))
-                (string-kit/is-lower? (str (:target split))))
-             (capitalize-letters
-              (apply str
-                     (concat
-                      (:head split)
-                      (string/capitalize (:target split))
-                      (:tail split)))
-              (dec ct))
-
-             (capitalize-letters st ct)))))
-
-;(clint/get GET /repos/:owner/:repo/releases/latest
-;           "http://example.com/resources/3")
-
-;(println (client/get "https://api.github.com/repos/SalvatoreTosti/harbor/releases/tags/v0.1"))
 
 (defn map-from-datab []
   "Reads word database into a map."
@@ -112,109 +87,14 @@
   (clojure.string/replace
     password #"!|\"|\#|\$|%|&|`|~|@|\^|\*|\(|\)|\_|\-|\+|=|\{|\}|\[|\]|\||:|\\." replace-map)))
 
-(defn special-character
-  "Returns a single random character from a list of common 'special' characters."
-  []
-  (->
-  '("!","\"","#","$","%","&","`","~","@","^","*","(",")","_","-","+","=","{","}","[","]","|",":") ;"\\" "back"
-   (rand-nth)))
-
-(defn insert-special
-  "Inserts a random 'special' character into a given collection."
-  [coll]
-  (let [split-list (-> (rand-int (inc (count coll)))
-                       (split-at coll))]
-    (concat (first split-list)
-            (conj [] (special-character))
-            (second split-list))))
-
- (defn insert-special-rec
-  "Inserts multiple random 'special' characters into a given collection."
-   [coll, remaining-specials]
-   (if (not (pos? remaining-specials))
-     coll
-     (insert-special-rec (insert-special coll) (dec remaining-specials))))
-
- (defn number-character
-   "Returns a single random numeric character."
-   []
-   (->
-    '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")
-    (rand-nth)))
-
- (defn insert-number
-   "Inserts a random numeric character into a given collection."
-  [coll]
-  (let [split-list (->
-                    (rand-int (inc (count coll)))
-                    (split-at coll))]
-    (concat (first split-list)
-            (conj []
-                  (number-character))
-                  (second split-list))))
-
- (defn insert-number-rec
-  "Inserts multiple random numeric characters into a given collection."
-   [coll, remaining-numbers]
-   (if (not (pos? remaining-numbers))
-     coll
-     (insert-number-rec (insert-number coll) (dec remaining-numbers))))
-
 (defn generate-passphrase
   [num-words, num-specials, num-capitals, num-numbers, wait-period]
   (-> (construct-password num-words)
-      (insert-special-rec num-specials)
-      (insert-number-rec num-numbers)
+      (flags/insert-special-rec num-specials)
+      (flags/insert-number-rec num-numbers)
       (#(clojure.string/join " " %))
-      (capitalize-letters num-capitals)
+      (flags/capitalize-letters num-capitals)
       (output/clipboard-out wait-period)))
-
-
-(defn remove-nth
-  [vect index]
-  (cond
-   (nil? vect) nil
-   (empty? vect) nil
-   (< index 0)
-   (remove-nth vect 0)
-   (>= index (count vect) )
-   (remove-nth vect (dec (count vect)))
-  :else
-   (let [target (nth vect index)
-        head (take index vect)
-        tail (drop (inc index) vect)]
-    {:target target :new-coll (concat head tail)})))
-
-(defn remove-random
-  [vect]
-  (remove-nth vect (rand-int (count vect))))
-
-(defn select-random-rec
-  [coll selected number]
-  (if (or (not (pos? number))
-          (empty? coll))
-    selected
-  (let [removal (remove-random coll)]
-    (select-random-rec (:new-coll removal) (conj selected (:target removal)) (dec number)))))
-
-(defn select-random
-  [coll number]
-  (select-random-rec coll '() number))
-
-(defn split-nth
-  [vect index]
-  (cond
-   (nil? vect) nil
-   (empty? vect) nil
-   (< index 0)
-   (split-nth vect 0)
-   (>= index (count vect) )
-   (split-nth vect (dec (count vect)))
-  :else
-   (let [target (nth vect index)
-        head (take index vect)
-        tail (drop (inc index) vect)]
-    {:target target :head head :tail tail})))
 
 (defn valid-arg-count?
   [args]
@@ -240,9 +120,32 @@
 
    :else {:message "" :action "continue" :arguments (Integer/parseInt (first args))}))
 
+(defn argument-parse
+  [st]
+   (let [flag-matcher (re-matcher #"Error while parsing option \"--\w* (.*)\":" st) ]
+     (second (re-find flag-matcher))))
+
+(defn exception-parse
+  [st]
+  (let [flag-matcher (re-matcher #"--\w* \w*\": (\S*):" st) ]
+     (second (re-find flag-matcher))))
+
+(defn flag-parse
+   [st]
+   (let [flag-matcher (re-matcher #"Error while parsing option \"(--\w*)" st) ]
+     (second (re-find flag-matcher))))
+
+(defn parse-error
+  [st]
+  {:flag (flag-parse st)
+   :argument (argument-parse st)
+   :exception (exception-parse st)})
+
 (defn error-check
   [status-map]
    (if (= (:action status-map) "exit")
+     ;(let [error (parse-error (first (:message status-map)))]
+       ;(println "Error parsing argument" (str "\"" (:argument error) "\"") "for flag"(:flag error)))
      (println (:message status-map))
     status-map))
 
