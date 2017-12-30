@@ -7,9 +7,9 @@ __Disclaimer:__ This is a _hobbyist_ project, I do not guarantee the passwords g
 
 ### Option 1, Download A Release
 1. Head over to the [releases](https://github.com/SalvatoreTosti/harbor/releases) page.
-2. Download *harbor\_bin.zip*
+2. Download a zip file.
 3. Extract it, then move the binary file into a directory on your PATH. (I use ~/bin/harbor)  
-If you downloaded the *harbor\_bin.zip*, extract and move the JAR into a directory on your PATH.
+If you downloaded the *harbor\_jar.zip*, extract it and move the JAR into a directory on your PATH.
 Then add the following line to the .bashrc file in your HOME directory: `harbor(){ java -jar PATH_TO_JAR_HERE  "$@"; }`
 4. Set sail, you're done! :boat:
 
